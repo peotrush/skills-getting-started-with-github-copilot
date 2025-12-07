@@ -28,7 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return (parts[0][0] + (parts[1][0] || '')).toUpperCase();
   }
 
-  function makeParticipantsList(participants) {
+  function makeParticipantsList(participants, activityName) {
     const container = document.createElement('div');
     container.className = 'participants';
 
@@ -57,6 +57,28 @@ document.addEventListener("DOMContentLoaded", () => {
         span.textContent = email;
         li.appendChild(avatar);
         li.appendChild(span);
+
+        // Add delete button
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.title = 'Unregister participant';
+        deleteBtn.innerHTML = '×';
+        deleteBtn.addEventListener('click', async () => {
+          try {
+            const url = `/activities/${encodeURIComponent(activityName)}/unregister?email=${encodeURIComponent(email)}`;
+            const res = await fetch(url, { method: 'DELETE' });
+            if (!res.ok) {
+              const body = await res.json().catch(()=>({detail: 'Unknown error'}));
+              throw new Error(body.detail || 'Unregister failed');
+            }
+            showMessage(`Unregistered ${email} from ${activityName}`, 'success');
+            await loadAndRender();
+          } catch (err) {
+            showMessage(err.message || 'Unregister failed', 'error');
+          }
+        });
+        li.appendChild(deleteBtn);
+
         ul.appendChild(li);
       });
     }
@@ -101,7 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
       card.appendChild(capacity);
 
       // Participants section
-      const participantsEl = makeParticipantsList(data.participants);
+      const participantsEl = makeParticipantsList(data.participants, name);
       card.appendChild(participantsEl);
 
       list.appendChild(card);
